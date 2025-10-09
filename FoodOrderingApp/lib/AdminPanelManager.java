@@ -127,7 +127,7 @@ public class AdminPanelManager {
         imgPanel.add(imgPathField, BorderLayout.CENTER);
         imgPanel.add(browseButton, BorderLayout.EAST);
         
-        // 3. การจัดการประเภท: ใช้ JComboBox 
+        // การจัดการประเภท: ใช้ JComboBox 
         JComboBox<String> categoryComboBox = new JComboBox<>(categories); 
         
         Font thaiFont = new Font("Tahoma", Font.PLAIN, 16); 
