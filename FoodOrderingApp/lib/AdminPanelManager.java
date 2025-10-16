@@ -19,7 +19,6 @@ public class AdminPanelManager {
     public AdminPanelManager(Component parent, List<Food> foodList) {
         this.parent = parent;
         this.foodList = foodList;
-        // ตรวจสอบและเก็บ reference ของ FoodOrderingGUI
         if (parent instanceof FoodOrderingGUI) {
             this.guiFrame = (FoodOrderingGUI) parent;
         }
@@ -27,12 +26,11 @@ public class AdminPanelManager {
 
     public void openAdminPanel() {
         JFrame adminFrame = new JFrame("จัดการเมนู (Admin)");
-        adminFrame.setSize(700, 400); // เพิ่มขนาดให้ดูดีขึ้น
+        adminFrame.setSize(700, 400);
         adminFrame.setLocationRelativeTo(parent);
         Font thaiFont = new Font("Tahoma", Font.PLAIN, 16);
         
         String[] columns = {"ชื่อเมนู", "ราคา ปกติ", "ราคา พิเศษ", "รูปภาพ", "ประเภท"};
-        // ไม่อนุญาตให้แก้ไขในตาราง Admin โดยตรง (ป้องกันความผิดพลาด)
         DefaultTableModel adminModel = new DefaultTableModel(columns, 0) {
              @Override
              public boolean isCellEditable(int row, int column) {
@@ -81,7 +79,7 @@ public class AdminPanelManager {
                 if (confirm == JOptionPane.YES_OPTION) {
                     adminModel.removeRow(row);
                     
-                    // *** 1. บันทึกข้อมูลหลังการลบ ***
+                    // 1. บันทึกข้อมูลหลังการลบ
                     try {
                         FoodMenuSaver.saveMenuToCSV(adminModel);
                         if (guiFrame != null) {
@@ -98,7 +96,7 @@ public class AdminPanelManager {
             }
         });
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10)); // จัดปุ่มให้อยู่ตรงกลาง
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnPanel.add(addBtn);
         btnPanel.add(editBtn);
         btnPanel.add(deleteBtn);
@@ -111,7 +109,6 @@ public class AdminPanelManager {
 
     private void addOrEditMenu(DefaultTableModel model, Integer rowIndex, JFrame parentFrame) {
         
-        // รายการประเภทสำหรับ JComboBox
         String[] categories = {"อาหาร", "เครื่องดื่ม", "ของหวาน", "อื่นๆ"}; 
         
         // 1. ประกาศและสร้าง Fields
@@ -140,14 +137,12 @@ public class AdminPanelManager {
         categoryComboBox.setFont(thaiFont);
         browseButton.setFont(thaiFont);
 
-        // *** กำหนดค่าเริ่มต้นสำหรับแก้ไข (Edit) ***
+        // กำหนดค่าเริ่มต้นสำหรับแก้ไข
         if (rowIndex != null) {
             nameField.setText(model.getValueAt(rowIndex, 0).toString());
             normalField.setText(model.getValueAt(rowIndex, 1).toString());
             specialField.setText(model.getValueAt(rowIndex, 2).toString());
-            // สำหรับรูปภาพ ให้ตั้งค่า Path เดิม
             imgPathField.setText(model.getValueAt(rowIndex, 3).toString()); 
-            // ตั้งค่า JComboBox ให้แสดงค่าปัจจุบัน
             categoryComboBox.setSelectedItem(model.getValueAt(rowIndex, 4).toString());
         }
 
@@ -162,17 +157,17 @@ public class AdminPanelManager {
                 
                 File selectedFile = fileChooser.getSelectedFile();
                 
-                // *** 1. กำหนดโฟลเดอร์ปลายทาง ***
+                // 1. กำหนดโฟลเดอร์ปลายทาง
                 File destinationDir = new File("images/");
                 if (!destinationDir.exists()) {
                     destinationDir.mkdirs(); // สร้างโฟลเดอร์ถ้ายังไม่มี
                 }
                 
-                // 2. สร้างไฟล์ปลายทาง (ใช้ชื่อไฟล์เดิม)
+                // 2. สร้างไฟล์ปลายทาง
                 File destinationFile = new File(destinationDir, selectedFile.getName());
                 
                 try {
-                    // *** 3. คัดลอกไฟล์จริงไปยังโฟลเดอร์ปลายทาง ***
+                    // 3. คัดลอกไฟล์จริงไปยังโฟลเดอร์ปลายทาง
                     Files.copy(selectedFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     
                     // 4. ตั้งค่า Path สัมพัทธ์ใน Field
@@ -195,11 +190,10 @@ public class AdminPanelManager {
         // 5. สร้าง inputPanel ด้วย GridBagLayout
         JPanel inputPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5); // Padding
+        gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL; 
-        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // ขอบด้านนอก
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Array ที่เก็บ Label และ Component ที่ถูกต้อง
         Object[][] components = {
             {"ชื่อเมนู:", nameField}, 
             {"ราคา ปกติ:", normalField}, 
@@ -209,7 +203,6 @@ public class AdminPanelManager {
         };
 
         for (int i = 0; i < components.length; i++) {
-            // คอลัมน์ที่ 0: Label
             gbc.gridx = 0;
             gbc.gridy = i;
             gbc.weightx = 0; 
@@ -217,11 +210,10 @@ public class AdminPanelManager {
             label.setFont(thaiFont);
             inputPanel.add(label, gbc);
 
-            // คอลัมน์ที่ 1: Component (ต้อง Cast)
             gbc.gridx = 1;
             gbc.gridy = i;
             gbc.weightx = 1; 
-            inputPanel.add((Component) components[i][1], gbc); // ใช้ Cast (Component)
+            inputPanel.add((Component) components[i][1], gbc);
         }
 
         // 6. เรียก JOptionPane
@@ -243,13 +235,13 @@ public class AdminPanelManager {
                 String img = imgPathField.getText().trim(); // ดึงจาก imgPathField
                 String category = categoryComboBox.getSelectedItem().toString(); 
                 
-                // ตรวจสอบข้อมูลไม่ว่างเปล่า
+                // ตรวจสอบข้อมูลไม่ว่าง
                 if (name.isEmpty() || img.isEmpty() || category.isEmpty() || normalField.getText().trim().isEmpty() || specialField.getText().trim().isEmpty()) {
                     JOptionPane.showMessageDialog(parentFrame, "กรุณากรอกข้อมูลให้ครบทุกช่อง", "ข้อผิดพลาด", JOptionPane.ERROR_MESSAGE);
                     return; 
                 }
 
-                // 7. การเพิ่ม/แก้ไขแถวใน TableModel
+                // 7.การเพิ่ม/แก้ไขแถวใน TableModel
                 if (rowIndex == null) {
                     model.addRow(new Object[]{name, normal, special, img, category});
                 } else {
@@ -260,7 +252,7 @@ public class AdminPanelManager {
                     model.setValueAt(category, rowIndex, 4);
                 }
 
-                // 8. บันทึกและอัปเดต GUI
+                // 8.บันทึกและอัปเดต GUI
                 FoodMenuSaver.saveMenuToCSV(model);
                 if (guiFrame != null) {
                     guiFrame.reloadMenuButtons();

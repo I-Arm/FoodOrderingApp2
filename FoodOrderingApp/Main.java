@@ -19,7 +19,6 @@ public class Main {
         UIManager.put("OptionPane.buttonFont", thaiFont);
 
         SwingUtilities.invokeLater(() -> {
-            // โหลดข้อมูลจาก data/menu.csv
             List<Food> foods = FoodMenuLoader.loadFoodFromCSV("data/menu.csv");
             
             if (foods.isEmpty()) {
