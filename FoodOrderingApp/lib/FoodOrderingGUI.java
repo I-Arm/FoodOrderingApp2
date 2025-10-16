@@ -5,27 +5,27 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javax.swing.event.DocumentEvent;
-import java.io.IOException; // <--- เพิ่ม Import ตัวนี้
+import java.io.IOException; 
 
 public class FoodOrderingGUI extends JFrame { 
     private JTable orderTable;
-    private DefaultTableModel tableModel; // <--- ตัวแปรที่ถูกต้อง
+    private DefaultTableModel tableModel;
     private JLabel totalLabel;
     private JPanel menuPanel;
     private List<Food> foodList;
     private OrderManager orderManager;
     private AdminPanelManager adminPanelManager; 
-    
 
     public FoodOrderingGUI(List<Food> foodList) {
         this.foodList = foodList;
         
         // สร้าง Manager Objects 
-        String[] columns = {"ประเภท", "เมนู", "ขนาด", "ราคา"}; 
-        tableModel = new DefaultTableModel(columns, 0); // <--- ใช้ tableModel
+        String[] columns = {"ประเภท", "เมนู", "ขนาด", "ราคา" , "จำนวน"}; 
+        tableModel = new DefaultTableModel(columns, 0);
         totalLabel = new JLabel("รวมทั้งหมด: 0.0 บาท");
         
         this.orderManager = new OrderManager(tableModel, totalLabel);
@@ -55,30 +55,22 @@ public class FoodOrderingGUI extends JFrame {
 
         JPanel orderPanel = new JPanel(new BorderLayout());
         orderPanel.add(scrollPane, BorderLayout.CENTER);
-        orderPanel.add(totalLabel, BorderLayout.SOUTH);
+        orderPanel.add(totalLabel, BorderLayout.NORTH);
 
-        JPanel buttonPanel = new JPanel();
-        JButton saveBtn = new JButton("บันทึก");
+        JPanel southPanel = new JPanel();
         JButton payBtn = new JButton("ชำระเงิน");
         JButton adminBtn = new JButton("จัดการระบบ");
         
-        saveBtn.setFont(thaiFont);
         payBtn.setFont(thaiFont);
         adminBtn.setFont(thaiFont);
         
         adminBtn.setVisible(false);
         adminBtn.addActionListener(e -> adminPanelManager.openAdminPanel()); 
-        saveBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "บันทึกออเดอร์เรียบร้อย!"));
-        
-        // *********** แก้ไขตรงนี้: เชื่อมต่อปุ่มชำระเงิน ***********
-        payBtn.addActionListener(e -> openPaymentDialog()); 
-        // *******************************************************
+        payBtn.addActionListener(e -> openPaymentDialog());
 
-        buttonPanel.add(saveBtn);
-        buttonPanel.add(payBtn);
-        buttonPanel.add(adminBtn); 
+        southPanel.add(payBtn);
 
-        orderPanel.add(buttonPanel, BorderLayout.NORTH);
+        orderPanel.add(southPanel, BorderLayout.SOUTH);
 
         add(new JScrollPane(menuPanel), BorderLayout.CENTER);
         add(orderPanel, BorderLayout.EAST);
@@ -128,6 +120,7 @@ public class FoodOrderingGUI extends JFrame {
 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         topPanel.add(loginBtn);
+        topPanel.add(adminBtn);
         add(topPanel, BorderLayout.NORTH);
     }
  
@@ -160,7 +153,7 @@ public class FoodOrderingGUI extends JFrame {
         JTextArea summaryArea = new JTextArea(10, 30);
         summaryArea.setEditable(false);
         summaryArea.setFont(thaiFont);
-        summaryArea.setText(getBillSummary(tableModel)); // <--- ใช้ tableModel ที่ถูกต้อง
+        summaryArea.setText(getBillSummary(tableModel, 0));
         
         JLabel totalLabel = new JLabel("ยอดรวมสุทธิ: " + df.format(total) + " บาท");
         totalLabel.setFont(new Font("Tahoma", Font.BOLD, 18));
@@ -225,52 +218,45 @@ public class FoodOrderingGUI extends JFrame {
         finishBtn.addActionListener(e -> {
             try {
                 double paid = Double.parseDouble(paidField.getText().trim());
-                if (paid < total) {
-                    JOptionPane.showMessageDialog(paymentDialog, "จำนวนเงินที่รับมาไม่เพียงพอ", "ข้อผิดพลาด", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                double change = paid - total;
-        
-                // 2. เตรียมใบเสร็จสรุป (ใช้ JTextArea และ JScrollPane เพื่อให้แสดงได้ยาว)
-                String billSummaryText = getBillSummary(tableModel);
-        
-                // 3. บันทึกข้อมูลสรุปก่อนเคลียร์
-                String receiptDetails = billSummaryText + 
-                "\n\n==============================================\n" +
-                String.format("%-40s %10s\n", "รวมทั้งสิ้น:", df.format(total) + " บาท") +
-                String.format("%-40s %10s\n", "รับเงินมา:", df.format(paid) + " บาท") +
-                String.format("%-40s %10s\n", "เงินทอน:", df.format(change) + " บาท");
-                
-                // 1. บันทึกประวัติบิล
-                BillHistorySaver.saveBill(tableModel, total, paid, paid - total);
-                
-                // 2. ล้างรายการสั่งซื้อและอัปเดต GUI
-                orderManager.clearOrder(); 
-                
-                JTextArea finalReceiptArea = new JTextArea(receiptDetails);
-                finalReceiptArea.setFont(new Font("Tahoma", Font.PLAIN, 14));
-                finalReceiptArea.setEditable(false);
-                JScrollPane scrollableReceipt = new JScrollPane(finalReceiptArea);
-                scrollableReceipt.setPreferredSize(new Dimension(450, 450));
-                
-                JOptionPane.showMessageDialog(
-                    paymentDialog, 
-                    scrollableReceipt, 
-                    "✅ การชำระเงินเสร็จสมบูรณ์ | ใบเสร็จ", 
-                    JOptionPane.PLAIN_MESSAGE
-                );
-                // *** ลบ: tableModel.setRowCount(0); ออก เพราะ clearOrder() ทำแล้ว ***
-                JOptionPane.showMessageDialog(paymentDialog, "การชำระเงินเสร็จสมบูรณ์ บันทึกรายการแล้ว", "สำเร็จ", JOptionPane.INFORMATION_MESSAGE);
-                paymentDialog.dispose(); 
-                
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(paymentDialog, "กรุณากรอกจำนวนเงินที่รับมาให้ถูกต้อง", "ข้อผิดพลาด", JOptionPane.ERROR_MESSAGE);
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(paymentDialog, "เกิดข้อผิดพลาดในการบันทึกประวัติบิล", "ข้อผิดพลาด I/O", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
+            if (paid < total) {
+                JOptionPane.showMessageDialog(paymentDialog, "จำนวนเงินที่รับมาไม่เพียงพอ", "ข้อผิดพลาด", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-        });
+
+            double change = paid - total;
+        
+            int queueNum = BillHistorySaver.saveBill(tableModel, total, paid, paid - total);
+
+            String billSummaryText = getBillSummary(tableModel, queueNum);
+
+            String receiptDetails = billSummaryText + 
+            "\n\n===================================\n" +
+            String.format("%-40s %10s\n", "รวมทั้งสิ้น:", df.format(total) + " บาท") +
+            String.format("%-40s %10s\n", "รับเงินมา:", df.format(paid) + " บาท") +
+            String.format("%-40s %10s\n", "เงินทอน:", df.format(change) + " บาท");
+        
+
+            orderManager.clearOrder(); 
+        
+            JTextArea finalReceiptArea = new JTextArea(receiptDetails);
+            finalReceiptArea.setFont(new Font("Tahoma", Font.PLAIN, 14));
+            finalReceiptArea.setEditable(false);
+            JScrollPane scrollableReceipt = new JScrollPane(finalReceiptArea);
+            scrollableReceipt.setPreferredSize(new Dimension(450, 450));
+        
+            JOptionPane.showMessageDialog(paymentDialog, scrollableReceipt,"✅ ใบเสร็จ (คิวที่ " + queueNum + ")", // แสดงคิวใน Title
+            JOptionPane.PLAIN_MESSAGE
+            );
+            JOptionPane.showMessageDialog(paymentDialog, "การชำระเงินเสร็จสมบูรณ์ บันทึกรายการแล้ว", "สำเร็จ", JOptionPane.INFORMATION_MESSAGE);
+            paymentDialog.dispose(); 
+        
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(paymentDialog, "กรุณากรอกจำนวนเงินที่รับมาให้ถูกต้อง", "ข้อผิดพลาด", JOptionPane.ERROR_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(paymentDialog, "เกิดข้อผิดพลาดในการบันทึกประวัติบิล", "ข้อผิดพลาด I/O", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    });
         
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(finishBtn);
@@ -300,25 +286,47 @@ public class FoodOrderingGUI extends JFrame {
     }
 
     // เมธอดเสริมสำหรับสรุปรายการ
-    private String getBillSummary(DefaultTableModel model) {
+    // ในไฟล์ FoodOrderingGUI.java: เมธอด getBillSummary
+    private String getBillSummary(DefaultTableModel model, int queueNumber) { 
         StringBuilder sb = new StringBuilder();
         double total = 0;
-        
-        sb.append(String.format("%-10s %-20s %-10s %10s\n", "Category", "Menu", "Type", "Price"));
-        sb.append("----------------------------------------------------------\n");
-        
+    
+        // 1. ส่วนหัวบิล: แสดงเลขคิวขนาดใหญ่และอยู่ตรงกลาง
+        sb.append("====================================\n");
+        // จัดให้อยู่ตรงกลาง
+        sb.append(String.format("%37s\n", "คิวที่"));
+        sb.append(String.format("%37s\n", ""));
+        // แสดงเลขคิวขนาดใหญ่และตัวหนา
+        sb.append(String.format("%37s\n", "  **" + queueNumber + "**")); 
+        sb.append(String.format("%37s\n", ""));
+        sb.append("===================================\n");
+
+        sb.append("วันที่: " + new SimpleDateFormat("dd/MM/yyyy เวลา|HH:mm").format(new java.util.Date()) + "\n");
+        sb.append("===================================\n");
+
+        // 2. รายละเอียดสินค้า
+        sb.append(String.format("%-10s %-20s %-10s %5s %10s\n", "Category", "Menu", "Type", "Qty","Subtotal"));
+        sb.append("===================================\n");
+    
         for (int i = 0; i < model.getRowCount(); i++) {
             String category = model.getValueAt(i, 0).toString();
             String menu = model.getValueAt(i, 1).toString();
             String type = model.getValueAt(i, 2).toString();
-            double price = Double.parseDouble(model.getValueAt(i, 3).toString());
-            total += price;
-            
-            sb.append(String.format("%-10s %-20s %-10s %10.2f\n", category, menu, type, price));
-        }
-        sb.append("----------------------------------------------------------\n");
-        sb.append(String.format("%40s %10.2f\n", "Total:", total));
+            double pricePerunit = Double.parseDouble(model.getValueAt(i, 3).toString());
+            int quantity = Integer.parseInt(model.getValueAt(i, 4).toString());
+            double subtotal = pricePerunit * quantity; // คำนวณราคารวมของรายการนี้
+            total += subtotal;
         
+            sb.append(String.format("%-10s %-20s %-10s %5d %10.2f\n", category, menu, type, quantity, subtotal));
+        }
+        sb.append("===================================\n");
+        sb.append(String.format("%40s %10.2f\n", "Total:", total));
+    
+        // 3. ส่วนท้ายบิล
+        sb.append("\n");
+        sb.append(String.format("%37s\n", "ขอบคุณที่ใช้บริการ"));
+        sb.append("===================================\n");
+    
         return sb.toString();
     }
 

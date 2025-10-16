@@ -30,6 +30,8 @@ public class Main {
             }
 
             new FoodOrderingGUI(foods).setVisible(true); 
+            
+            Cooksite.showCookSite();
         });
     }
 }

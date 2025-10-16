@@ -204,8 +204,8 @@ public class AdminPanelManager {
             {"ชื่อเมนู:", nameField}, 
             {"ราคา ปกติ:", normalField}, 
             {"ราคา พิเศษ:", specialField}, 
-            {"รูปภาพ:", imgPanel},         // <--- Component ที่ถูกต้อง
-            {"ประเภท:", categoryComboBox}  // <--- Component ที่ถูกต้อง
+            {"รูปภาพ:", imgPanel},
+            {"ประเภท:", categoryComboBox}
         };
 
         for (int i = 0; i < components.length; i++) {
